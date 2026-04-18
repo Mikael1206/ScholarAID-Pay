@@ -23,6 +23,15 @@ A decentralized scholarship disbursement system built on Stellar's Soroban smart
 │   └── requirements.txt # Python dependencies
 └── README.md          # This file
 ```
+Trustless USDC escrow for freelance digital art commissions on the Stellar Network.
+
+ComiSure replaces informal, trust-based payment channels with a decentralized Soroban smart contract. Protect yourself from chargeback scams and ghost artists using instant, on-chain settlements.
+
+GitHub Repo: Mikael1206/ScholarAID-Pay
+Contract Factory ID: GCMBSOURXACFPKFDRVHAYP22ZIIPGGSXVDKVNAAZX7ZT5SGDI3CF3NC6
+Stellar Expert Factory Log: https://stellar.expert/explorer/testnet/tx/cf5546a876b71164db5885a49a6374fe640e8812efc8b65945e2b599132d04ed
+
+<img width="1919" height="911" alt="Screenshot 2026-04-18 134602" src="https://github.com/user-attachments/assets/9800fcf4-c352-4a51-9431-28d1f4ff0710" />
 
 ## Overview
 
