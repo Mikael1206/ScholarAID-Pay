@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 import random
+import ed25519
+import hashlib
 
 app = FastAPI(title="ScholarAID Pay Backend", version="1.0.0")
 
@@ -29,6 +31,9 @@ PRE_APPROVED_STUDENTS = {
     "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF": {"name": "Test Student", "score": 92},
 }
 
+# Add after imports
+SERVER_PRIVATE_KEY = ed25519.SigningKey.from_secret_bytes(bytes.fromhex("your_private_key_hex_here"))  # Replace with actual key
+
 class EligibilityRequest(BaseModel):
     wallet_address: str
 
@@ -36,6 +41,7 @@ class EligibilityResponse(BaseModel):
     eligible: bool
     message: str
     score: int = 0
+    signature: str = ""  # Add this
 
 @app.get("/")
 async def root():
@@ -56,10 +62,12 @@ async def verify_eligibility(request: EligibilityRequest):
         ai_score = student_data["score"] + random.randint(-5, 5)  # Add some variance
 
         if ai_score >= 80:  # Eligibility threshold
+            signature = sign_claim_message(wallet_address, "pup-scholarship-2024")  # Example scholarship_id
             return EligibilityResponse(
                 eligible=True,
                 message=f"Eligible! AI Readiness Score: {ai_score}%",
-                score=ai_score
+                score=ai_score,
+                signature=signature
             )
         else:
             return EligibilityResponse(
@@ -101,6 +109,11 @@ async def get_student_info(wallet_address: str):
         return PRE_APPROVED_STUDENTS[wallet_address]
     else:
         raise HTTPException(status_code=404, detail="Student not found")
+
+def sign_claim_message(student_address: str, scholarship_id: str) -> str:
+    message = f"{student_address}:{scholarship_id}".encode('utf-8')
+    signature = SERVER_PRIVATE_KEY.sign(message)
+    return signature.hex()
 
 if __name__ == "__main__":
     import uvicorn

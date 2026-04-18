@@ -1,16 +1,24 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Contract, SorobanRpc, Networks } from '@stellar/stellar-sdk'
 
 const CONTRACT_ID = 'your_contract_id_here' // Replace with your deployed contract ID
 const BACKEND_URL = 'http://localhost:8000' // FastAPI backend URL
 
-function ScholarshipCard({ publicKey }) {
-  const [isEligible, setIsEligible] = useState(null)
-  const [isClaiming, setIsClaiming] = useState(false)
-  const [message, setMessage] = useState('')
+function ScholarshipCard({ scholarshipId, scholarshipType, walletAddress }) {
+  const [status, setStatus] = useState('apply') // 'apply', 'claimed', 'incompatible'
+
+  useEffect(() => {
+    // Fetch from backend or contract if already claimed
+    // Example: Call API to check claim status
+    // If claimed, setStatus('claimed')
+    // If FullTuition conflict, setStatus('incompatible')
+  }, [scholarshipId, walletAddress])
+
+  const buttonText = status === 'claimed' ? 'Claimed' : status === 'incompatible' ? 'Incompatible' : 'Apply'
+  const disabled = status !== 'apply'
 
   const checkEligibility = async () => {
-    if (!publicKey) {
+    if (!walletAddress) {
       setMessage('Please connect your Freighter wallet before verifying eligibility.')
       return
     }
@@ -21,7 +29,7 @@ function ScholarshipCard({ publicKey }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ wallet_address: publicKey }),
+        body: JSON.stringify({ wallet_address: walletAddress }),
       })
 
       if (!response.ok) {
@@ -49,7 +57,7 @@ function ScholarshipCard({ publicKey }) {
       const contract = new Contract(CONTRACT_ID)
 
       // Get account info
-      const account = await server.getAccount(publicKey)
+      const account = await server.getAccount(walletAddress)
 
       // Build transaction
       const amount = 10000000 // 10 USDC (assuming 7 decimals)
@@ -57,7 +65,7 @@ function ScholarshipCard({ publicKey }) {
         fee: '100',
         networkPassphrase: Networks.TESTNET,
       })
-        .addOperation(contract.call('claim_scholarship', publicKey, amount))
+        .addOperation(contract.call('claim_scholarship', walletAddress, amount))
         .setTimeout(30)
         .build()
 
@@ -93,16 +101,20 @@ function ScholarshipCard({ publicKey }) {
         <p className="text-white mb-4">NGO: Philippine University Partnership</p>
       </div>
 
-      {isEligible === null ? (
+      {status === 'apply' ? (
         <button
           onClick={checkEligibility}
           className="w-full bg-pup-blue text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors mb-4"
         >
           Verify Eligibility
         </button>
-      ) : isEligible ? (
+      ) : (
         <div>
-          <p className="text-green-400 mb-4">✓ Eligible for scholarship</p>
+          {status === 'claimed' ? (
+            <p className="text-green-400 mb-4">✓ Eligible for scholarship</p>
+          ) : (
+            <p className="text-red-400">✗ Not eligible for scholarship</p>
+          )}
           <button
             onClick={claimScholarship}
             disabled={isClaiming}
@@ -111,8 +123,6 @@ function ScholarshipCard({ publicKey }) {
             {isClaiming ? 'Claiming...' : 'Claim Scholarship'}
           </button>
         </div>
-      ) : (
-        <p className="text-red-400">✗ Not eligible for scholarship</p>
       )}
 
       {message && (

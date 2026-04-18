@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import StellarSdk from 'stellar-sdk'
 
 const scholarshipData = [
   { name: 'CHED Full Merit Scholarship', org: 'Commission on Higher Education', amount: 500, currency: 'XLM', icon: '🏛️', contract: 'CDST...9A2F', match: 96, tags: ['Grade 12 · Senior HS', 'Merit-Based', 'Soroban Escrow'] },
@@ -145,6 +146,31 @@ function App() {
   const showWallet = () => {
     setModalContent({ type: 'wallet', address: publicKey })
     setModalOpen(true)
+  }
+
+  async function checkUSDCTrustline(walletAddress) {
+    const server = new StellarSdk.Server('https://horizon-testnet.stellar.org')
+    try {
+      const account = await server.loadAccount(walletAddress)
+      const usdcAsset = new StellarSdk.Asset('USDC', 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN')
+      const hasTrustline = account.balances.some(balance => balance.asset_code === 'USDC' && balance.asset_issuer === usdcAsset.issuer)
+      return hasTrustline
+    } catch (error) {
+      console.error('Error checking trustline:', error)
+      return false
+    }
+  }
+
+  async function addUSDCTrustline(walletAddress) {
+    const server = new StellarSdk.Server('https://horizon-testnet.stellar.org')
+    const account = await server.loadAccount(walletAddress)
+    const usdcAsset = new StellarSdk.Asset('USDC', 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN')
+    const transaction = new StellarSdk.TransactionBuilder(account, { fee: 100 })
+      .addOperation(StellarSdk.Operation.changeTrust({ asset: usdcAsset }))
+      .setTimeout(30)
+      .build()
+    // Integrate with wallet for signing/submission
+    console.log('Sign this transaction:', transaction.toEnvelope().toXDR('base64'))
   }
 
   return (
