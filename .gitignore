@@ -1,1 +1,5 @@
-/target
+contract\target
+Cargo.lock
+.DS_Store
+.env
+*.log
