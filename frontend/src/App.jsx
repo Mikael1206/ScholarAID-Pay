@@ -1,29 +1,51 @@
 import React, { useState, useEffect } from 'react'
-import ScholarshipCard from './ScholarshipCard.jsx'
+
+const scholarshipData = [
+  { name: 'CHED Full Merit Scholarship', org: 'Commission on Higher Education', amount: 500, currency: 'XLM', icon: '🏛️', contract: 'CDST...9A2F', match: 96, tags: ['Grade 12 · Senior HS', 'Merit-Based', 'Soroban Escrow'] },
+  { name: 'SM Foundation Scholarship', org: 'SM Cares · SM Foundation Inc.', amount: 300, currency: 'XLM', icon: '🏢', contract: 'CSMF...3B7E', match: 89, tags: ['Low-Income Family', 'Metro Manila', 'USDC Option'] },
+  { name: 'Gokongwei Brothers Foundation', org: 'JG Summit Holdings', amount: 750, currency: 'XLM', icon: '🌿', contract: 'CJGB...5D1C', match: 84, tags: ['Science Track', 'Davao / Cebu / Manila', 'On-chain Verified'] },
+  { name: 'DOST SEI Scholarship', org: 'Dept. of Science & Technology', amount: 420, currency: 'XLM', icon: '⚡', contract: 'CDOS...8G4H', match: 81, tags: ['STEM Track', 'Nationwide', 'Pre-Approved List'] },
+]
+
+const tagColors = {
+  'Grade 12 · Senior HS': 'tag-green',
+  'Merit-Based': 'tag-blue',
+  'Soroban Escrow': 'tag-purple',
+  'Low-Income Family': 'tag-gold',
+  'Metro Manila': 'tag-blue',
+  'USDC Option': 'tag-purple',
+  'Science Track': 'tag-green',
+  'Davao / Cebu / Manila': 'tag-gold',
+  'On-chain Verified': 'tag-purple',
+  'STEM Track': 'tag-purple',
+  'Nationwide': 'tag-blue',
+  'Pre-Approved List': 'tag-green',
+}
 
 function App() {
   const [publicKey, setPublicKey] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [hasFreighter, setHasFreighter] = useState(false)
+  const [activeTab, setActiveTab] = useState('scholarships')
+  const [claimedSet, setClaimedSet] = useState(new Set())
+  const [history, setHistory] = useState([])
+  const [totalXLM, setTotalXLM] = useState(0)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalContent, setModalContent] = useState(null)
+  const [flowPhase, setFlowPhase] = useState(0)
+  const [currentScholarship, setCurrentScholarship] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
 
   useEffect(() => {
     const checkFreighter = () => {
       if (typeof window !== 'undefined') {
-        const hasFreighter =
-          window.freighterApi ||
-          window.freighter ||
-          (window.chrome && window.chrome.runtime && window.chrome.runtime.connect) ||
-          false
-
+        const hasFreighter = window.freighterApi || window.freighter || false
         setHasFreighter(!!hasFreighter)
       }
     }
-
     checkFreighter()
-
-    // Check again after a short delay in case extension loads slowly
     const timeout = setTimeout(checkFreighter, 2000)
-
     return () => clearTimeout(timeout)
   }, [])
 
@@ -31,7 +53,6 @@ function App() {
     if (typeof window !== 'undefined' && (window.freighterApi || window.freighter)) {
       try {
         let connection
-
         if (window.freighterApi && window.freighterApi.connect) {
           connection = await window.freighterApi.connect()
         } else if (window.freighterApi && window.freighterApi.connectWallet) {
@@ -41,7 +62,6 @@ function App() {
         }
 
         let address
-
         if (connection?.publicKey) {
           address = connection.publicKey
         } else if (connection?.address) {
@@ -52,114 +72,367 @@ function App() {
           address = await window.freighter.getPublicKey()
         }
 
-        if (!address) {
-          throw new Error('Unable to retrieve public key from Freighter')
-        }
-
+        if (!address) throw new Error('Unable to retrieve public key')
         setPublicKey(address)
         setIsConnected(true)
       } catch (error) {
         console.error('Wallet connection failed:', error)
-        alert('Please install the Freighter wallet extension and allow access.')
+        alert('Please install the Freighter wallet extension.')
       }
     } else {
-      alert('Freighter wallet not detected. Please install it.')
+      alert('Freighter wallet not detected.')
     }
   }
 
   const disconnectWallet = () => {
     setPublicKey('')
     setIsConnected(false)
+    setIsDemoMode(false)
+  }
+
+  const enterDemoMode = () => {
+    setPublicKey('GBTQ3YKZRPXQAJ4BNMFKS9AWVLQPCR7K3M')
+    setIsConnected(true)
+    setIsDemoMode(true)
+  }
+
+  const formatWalletAddress = (addr) => {
+    if (!addr) return ''
+    return addr.slice(0, 4) + '...' + addr.slice(-4)
+  }
+
+  const getInitials = (addr) => {
+    return addr ? addr.slice(0, 2).toUpperCase() : 'JD'
+  }
+
+  const openClaim = (idx) => {
+    setCurrentScholarship(idx)
+    setFlowPhase(0)
+    setIsProcessing(false)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setModalContent(null)
+  }
+
+  const startClaim = async (idx) => {
+    const scholarship = scholarshipData[idx]
+    setIsProcessing(true)
+    setFlowPhase(0)
+
+    // Simulate claim flow with phases
+    for (let phase = 1; phase <= 4; phase++) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setFlowPhase(phase)
+    }
+
+    // Mark as claimed
+    const newClaimedSet = new Set(claimedSet)
+    newClaimedSet.add(idx)
+    setClaimedSet(newClaimedSet)
+    setTotalXLM(prev => prev + scholarship.amount)
+
+    const txHash = 'TX' + Math.random().toString(36).slice(2, 18).toUpperCase()
+    const newHistory = [{ ...scholarship, txHash, date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) }, ...history]
+    setHistory(newHistory)
+
+    setIsProcessing(false)
+    setModalContent({ type: 'success', scholarship, txHash })
+  }
+
+  const showWallet = () => {
+    setModalContent({ type: 'wallet', address: publicKey })
+    setModalOpen(true)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pup-blue via-[#002244] to-pup-red text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10 sm:px-8 lg:px-12">
-        <header className="text-center mb-10">
-          <p className="text-sm uppercase tracking-[0.35em] text-pup-gold opacity-80 mb-4">Scholarship portal</p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
-            ScholarAID Pay
-          </h1>
-          <p className="mt-4 text-base sm:text-xl max-w-3xl mx-auto text-slate-100/90 leading-relaxed">
-            Connect your Freighter wallet, verify scholarship eligibility, and claim funds on the Stellar
-            testnet.
-          </p>
-        </header>
-
-        <div className="grid gap-8 lg:grid-cols-[1.3fr_0.9fr] items-start">
-          <div className="rounded-[32px] bg-slate-950/70 border border-white/10 p-8 shadow-2xl shadow-black/30 backdrop-blur-xl">
-            <div className="flex flex-col gap-6">
-              <div className="space-y-4">
-                <h2 className="text-2xl sm:text-3xl font-semibold text-pup-gold">Welcome to ScholarAID Pay</h2>
-                <p className="text-slate-200/90 leading-relaxed">
-                  This portal lets you safely connect your Freighter wallet and claim scholarship support from the
-                  university partner program.
-                </p>
-                <div className="rounded-2xl bg-blue-600/10 border border-blue-500/20 p-4 mt-4">
-                  <p className="text-blue-100 text-sm leading-relaxed">
-                    <strong>Testing:</strong> Create a test wallet in Freighter or use the test address
-                    <code className="bg-slate-800 px-2 py-1 rounded text-xs ml-2">GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF</code>
-                    for eligibility testing.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-3xl bg-white/10 border border-white/10 p-5">
-                  <p className="text-sm uppercase tracking-[0.25em] text-slate-300 mb-2">Network</p>
-                  <p className="text-lg font-semibold">Stellar Testnet</p>
-                </div>
-                <div className="rounded-3xl bg-white/10 border border-white/10 p-5">
-                  <p className="text-sm uppercase tracking-[0.25em] text-slate-300 mb-2">Token</p>
-                  <p className="text-lg font-semibold">USDC</p>
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6">
-                {!hasFreighter ? (
-                  <div className="rounded-3xl bg-red-600/10 border border-red-500/20 p-5 text-red-100">
-                    <p className="font-semibold mb-2">Freighter wallet not detected</p>
-                    <p className="text-sm leading-relaxed mb-4">
-                      Install the Freighter browser extension, then refresh this page and click Connect again.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="inline-flex items-center justify-center rounded-full bg-slate-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-                    >
-                      Refresh Page
-                    </button>
-                  </div>
-                ) : !isConnected ? (
-                  <button
-                    type="button"
-                    onClick={connectWallet}
-                    className="w-full inline-flex items-center justify-center rounded-full bg-pup-gold px-6 py-4 text-sm font-semibold text-pup-blue shadow-lg shadow-pup-blue/20 transition hover:bg-yellow-400"
-                  >
-                    Connect Freighter Wallet
-                  </button>
-                ) : (
-                  <div className="rounded-3xl bg-slate-900/80 border border-white/10 p-5">
-                    <p className="text-slate-300 mb-3">Connected wallet</p>
-                    <p className="font-semibold break-words text-white">{publicKey}</p>
-                    <button
-                      type="button"
-                      onClick={disconnectWallet}
-                      className="mt-5 inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
-                    >
-                      Disconnect
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[32px] bg-white/10 border border-white/10 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
-            <ScholarshipCard publicKey={publicKey} />
-          </div>
+    <div>
+      <div className="topbar">
+        <div className="logo">
+          <div className="logo-icon">S</div>
+          ScholarAID <span className="badge">STELLAR</span>
+        </div>
+        <div className="topbar-right">
+          {isConnected ? (
+            <>
+              {isDemoMode && <span style={{fontSize: '10px', background: 'var(--stellar)', color: 'white', padding: '4px 8px', borderRadius: '99px', fontWeight: 600, marginRight: '8px'}}>DEMO MODE</span>}
+              <button className="wallet-pill" onClick={showWallet}>
+                <div className="wallet-dot"></div>
+                {formatWalletAddress(publicKey)}
+              </button>
+              <div className="avatar">{getInitials(publicKey)}</div>
+              <button className="btn-secondary" style={{width: 'auto', margin: 0, padding: '6px 12px', fontSize: '12px'}} onClick={disconnectWallet}>
+                Exit {isDemoMode ? 'Demo' : 'Wallet'}
+              </button>
+            </>
+          ) : (
+            <button className="btn-primary" style={{width: 'auto', margin: 0}} onClick={connectWallet}>
+              {hasFreighter ? 'Connect Wallet' : 'Install Freighter'}
+            </button>
+          )}
         </div>
       </div>
+
+      <div className="page">
+        {isConnected ? (
+          <>
+            <div className="hero-card">
+              <div className="hero-label">Good morning 👋</div>
+              <div className="hero-name">Juan dela Cruz</div>
+              <div className="hero-sub">Grade 12 · Malabon National High School · Metro Manila</div>
+              <div className="balance-row">
+                <div className="balance-num">{totalXLM.toFixed(2)}</div>
+                <div className="balance-cur">XLM received</div>
+              </div>
+              <div className="score-row">
+                <div className="score-pill">
+                  <span className="score-star">★</span>
+                  <span>Readiness: {Math.min(96, 78 + history.length * 4)}%</span>
+                </div>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar-fill" style={{width: Math.min(96, 78 + history.length * 4) + '%'}}></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="tabs">
+              <button className={`tab ${activeTab === 'scholarships' ? 'active' : ''}`} onClick={() => setActiveTab('scholarships')}>Scholarships</button>
+              <button className={`tab ${activeTab === 'readiness' ? 'active' : ''}`} onClick={() => setActiveTab('readiness')}>AI Readiness</button>
+              <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>History</button>
+            </div>
+
+            {activeTab === 'scholarships' && (
+              <div className="fade-up">
+                <p className="section-label">Matched for you · 4 available</p>
+                {scholarshipData.map((scholarship, idx) => (
+                  <div key={idx} className="scholarship-card" onClick={() => openClaim(idx)}>
+                    <div className="card-top">
+                      <div className="card-icon" style={{background: ['#EBF0FF', '#FEF3C7', '#D1FAE5', '#F3EEFF'][idx]}}>{scholarship.icon}</div>
+                      <div className="card-info">
+                        <div className="card-title">{scholarship.name}</div>
+                        <div className="card-org">{scholarship.org}</div>
+                      </div>
+                      <div className="card-amount">{scholarship.amount} XLM</div>
+                    </div>
+                    <div className="card-tags">
+                      {scholarship.tags.map((tag, tidx) => (
+                        <span key={tidx} className={`tag ${tagColors[tag] || 'tag-blue'}`}>{tag}</span>
+                      ))}
+                    </div>
+                    <div className="card-footer">
+                      <div className="match-score">✓ {scholarship.match}% match</div>
+                      <button className="card-btn">Apply & Verify →</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'readiness' && (
+              <div className="fade-up">
+                <p className="section-label">AI Scholarship Readiness Score</p>
+                <div className="readiness-card">
+                  <div className="readiness-header">
+                    <div>
+                      <div className="readiness-title">Juan's Readiness Score</div>
+                      <div style={{fontSize: '12px', color: 'var(--muted)', marginTop: '2px'}}>Updated today · Auto-triggers payout at 85%</div>
+                    </div>
+                    <div className="readiness-score-circle">
+                      <div className="readiness-score-inner">78%</div>
+                    </div>
+                  </div>
+                  <div style={{marginBottom: '10px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px'}}>
+                      <span style={{color: 'var(--muted)'}}>Progress to auto-trigger</span>
+                      <span style={{fontWeight: 600, color: 'var(--brand)'}}>78 / 85</span>
+                    </div>
+                    <div style={{background: 'var(--border)', borderRadius: '99px', height: '8px', overflow: 'hidden'}}>
+                      <div style={{width: '78%', height: '100%', background: 'linear-gradient(90deg, var(--brand), var(--stellar))', borderRadius: '99px'}}></div>
+                    </div>
+                  </div>
+                  {[
+                    {label: 'Grade 12 enrollment verified', points: '+20pts', done: true},
+                    {label: 'Stellar wallet trustline set', points: '+15pts', done: true},
+                    {label: 'Family income bracket declared', points: '+15pts', done: true},
+                    {label: 'GPA 88+ confirmed', points: '+18pts', done: true},
+                    {label: 'Birth certificate uploaded', points: '+7pts', done: false},
+                    {label: 'Recommendation letter', points: '+5pts', done: false},
+                  ].map((item, idx) => (
+                    <div key={idx} className="criteria-row">
+                      <div className={`criteria-check ${item.done ? 'check-done' : 'check-miss'}`}>
+                        {item.done ? '✓' : '✗'}
+                      </div>
+                      <div className="criteria-label">{item.label}</div>
+                      <div className="criteria-status" style={{color: item.done ? 'var(--muted)' : 'var(--danger)'}}>{item.points}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="ai-box">
+                  <div className="ai-box-top">★ AI Suggestion</div>
+                  <div className="ai-box-text">Upload your <strong>birth certificate</strong> and <strong>recommendation letter</strong> to reach 85% and auto-trigger the CHED Merit payout. These 2 documents unlock ₱17,500 worth of scholarship funds immediately.</div>
+                </div>
+                <button className="btn-primary" onClick={() => setActiveTab('scholarships')}>Upload Documents → Unlock Funds</button>
+              </div>
+            )}
+
+            {activeTab === 'history' && (
+              <div className="fade-up">
+                <p className="section-label">Transaction history</p>
+                <div className="stats-grid">
+                  <div className="stat-card"><div className="stat-label">Total received</div><div className="stat-value stat-green">{totalXLM} XLM</div></div>
+                  <div className="stat-card"><div className="stat-label">Claims made</div><div className="stat-value stat-blue">{history.length}</div></div>
+                </div>
+                <div id="historyList">
+                  {history.length === 0 ? (
+                    <div style={{textAlign: 'center', padding: '40px 0', color: 'var(--muted)', fontSize: '14px'}}>
+                      No transactions yet.<br />Apply for a scholarship to get started!
+                    </div>
+                  ) : (
+                    history.map((h, idx) => (
+                      <div key={idx} className="history-item">
+                        <div className="history-icon" style={{background: 'var(--success-light)'}}>{h.icon}</div>
+                        <div className="history-info">
+                          <div className="history-name">{h.name}</div>
+                          <div className="history-date">{h.date} · {h.txHash.slice(0, 12)}...</div>
+                        </div>
+                        <div className="history-amount">+{h.amount} XLM</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{textAlign: 'center', padding: '60px 20px'}}>
+            <h2 style={{marginBottom: '12px', fontSize: '24px', fontWeight: 700}}>Welcome to ScholarAID Pay</h2>
+            <p style={{marginBottom: '24px', color: 'var(--muted)', maxWidth: '400px', margin: '0 auto 24px'}}>
+              Connect your Freighter wallet to verify scholarship eligibility and claim funds on the Stellar network.
+            </p>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '300px', margin: '0 auto'}}>
+              <button className="btn-primary" onClick={connectWallet}>
+                {hasFreighter ? 'Connect Freighter Wallet' : 'Install Freighter'}
+              </button>
+              <button className="btn-secondary" onClick={enterDemoMode} style={{background: 'var(--stellar-light)', color: 'var(--stellar)', border: 'none'}}>
+                Try Demo Mode →
+              </button>
+            </div>
+            {!hasFreighter && (
+              <p style={{marginTop: '16px', fontSize: '12px', color: 'var(--muted)'}}>
+                Don't have Freighter? Use Demo Mode to explore the app
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {modalOpen && (
+        <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && closeModal()}>
+          <div className="modal">
+            <div className="modal-handle"></div>
+            {modalContent?.type === 'wallet' ? (
+              <>
+                <div className="modal-title">Your Stellar Wallet</div>
+                <div className="modal-sub">Trustline active · Mainnet ready</div>
+                <div className="amount-box">
+                  <div className="amount-label">Total XLM Balance</div>
+                  <div className="amount-value">{totalXLM.toFixed(2)} XLM</div>
+                  <div className="amount-sub">≈ ₱{(totalXLM * 8.5).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} Philippine Peso</div>
+                </div>
+                <div className="tx-hash">
+                  <div style={{fontSize: '10px', color: 'var(--muted)', marginBottom: '4px'}}>WALLET ADDRESS</div>
+                  {modalContent.address}
+                </div>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px'}}>
+                  <div style={{background: 'var(--surface)', borderRadius: '10px', padding: '12px', textAlign: 'center'}}>
+                    <div style={{fontSize: '11px', color: 'var(--muted)', marginBottom: '4px'}}>Trustline</div>
+                    <div style={{fontSize: '13px', fontWeight: 700, color: 'var(--success)'}}>✓ Active</div>
+                  </div>
+                  <div style={{background: 'var(--surface)', borderRadius: '10px', padding: '12px', textAlign: 'center'}}>
+                    <div style={{fontSize: '11px', color: 'var(--muted)', marginBottom: '4px'}}>Network</div>
+                    <div style={{fontSize: '13px', fontWeight: 700, color: 'var(--stellar)'}}>Stellar</div>
+                  </div>
+                </div>
+                <button className="btn-secondary" onClick={closeModal}>Close</button>
+              </>
+            ) : modalContent?.type === 'success' ? (
+              <>
+                <div className="success-screen fade-up">
+                  <div className="success-icon">✓</div>
+                  <div className="success-title">Funds Received!</div>
+                  <div className="success-sub">Your scholarship has been disbursed instantly via Stellar</div>
+                  <div className="success-amount">+{modalContent.scholarship.amount} {modalContent.scholarship.currency}</div>
+                  <div className="success-cur">≈ ₱{(modalContent.scholarship.amount * 8.5).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} credited to your wallet</div>
+                  <div className="tx-hash" style={{marginTop: '16px', textAlign: 'left'}}>
+                    <div style={{fontSize: '10px', color: 'var(--muted)', marginBottom: '4px'}}>STELLAR TRANSACTION HASH</div>
+                    {modalContent.txHash}
+                  </div>
+                  <div style={{fontSize: '12px', color: 'var(--muted)', marginBottom: '16px'}}>Verified on Stellar testnet · Soroban contract executed · No middleman</div>
+                  <button className="btn-primary" onClick={() => {closeModal()}}>Done — View Wallet</button>
+                  <button className="btn-secondary" onClick={() => {closeModal(); setActiveTab('history')}}>View Transaction History</button>
+                </div>
+              </>
+            ) : currentScholarship !== null && !claimedSet.has(currentScholarship) ? (
+              <>
+                <div className="modal-title">{scholarshipData[currentScholarship].icon} {scholarshipData[currentScholarship].name}</div>
+                <div className="modal-sub">{scholarshipData[currentScholarship].org} · {scholarshipData[currentScholarship].match}% match</div>
+                <div className="amount-box">
+                  <div className="amount-label">Scholarship Amount</div>
+                  <div className="amount-value">{scholarshipData[currentScholarship].amount} {scholarshipData[currentScholarship].currency}</div>
+                  <div className="amount-sub">≈ ₱{(scholarshipData[currentScholarship].amount * 8.5).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} · Instant via Stellar</div>
+                </div>
+                <div className="ai-box">
+                  <div className="ai-box-top">★ AI Readiness Match</div>
+                  <div className="ai-box-text">Based on your profile, you have a <strong>{scholarshipData[currentScholarship].match}% match</strong> for this scholarship. Your GPA and enrollment status meet all primary criteria.</div>
+                </div>
+                <div className="section-label" style={{marginTop: '4px'}}>Soroban verification flow</div>
+                <div className="flow-steps">
+                  {['Wallet verification', 'Eligibility check', 'Escrow release', 'XLM disbursed'].map((step, idx) => (
+                    <div key={idx} className="flow-step">
+                      <div className="step-left">
+                        <div className={`step-dot ${idx < flowPhase ? 'done' : (idx === flowPhase && isProcessing ? 'active' : 'pending')}`}>
+                          {idx < flowPhase ? '✓' : (idx + 1)}
+                        </div>
+                        {idx < 3 && <div className="step-line"></div>}
+                      </div>
+                      <div className="step-content">
+                        <div className="step-name">{step}</div>
+                        <div className="step-desc">
+                          {step === 'Wallet verification' && 'Checking Stellar trustline & wallet status'}
+                          {step === 'Eligibility check' && 'Verifying credential hash on-chain'}
+                          {step === 'Escrow release' && 'Soroban releases funds from escrow'}
+                          {step === 'XLM disbursed' && 'Funds sent to your wallet instantly'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {isProcessing ? (
+                  <button className="btn-primary" disabled>
+                    <span className="spinner"></span>Processing on Stellar...
+                  </button>
+                ) : (
+                  <button className="btn-primary" onClick={() => startClaim(currentScholarship)}>Apply & Verify via Soroban →</button>
+                )}
+                <button className="btn-secondary" onClick={closeModal}>Cancel</button>
+              </>
+            ) : currentScholarship !== null && claimedSet.has(currentScholarship) ? (
+              <>
+                <div className="modal-title">{scholarshipData[currentScholarship].icon} {scholarshipData[currentScholarship].name}</div>
+                <div className="modal-sub">{scholarshipData[currentScholarship].org}</div>
+                <div className="amount-box">
+                  <div className="amount-label">Already Claimed</div>
+                  <div className="amount-value" style={{color: 'var(--success)'}}>✓ {scholarshipData[currentScholarship].amount} {scholarshipData[currentScholarship].currency}</div>
+                  <div className="amount-sub">Successfully disbursed via Soroban</div>
+                </div>
+                <button className="btn-secondary" onClick={closeModal}>Close</button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
