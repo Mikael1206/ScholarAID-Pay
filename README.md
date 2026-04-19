@@ -1,6 +1,7 @@
 # ScholarAid Pay
 
-A decentralized scholarship disbursement system built on Stellar's Soroban smart contracts.
+ScholarAID Pay is an AI-powered scholarship platform for students in the Philippines. Instead of just finding scholarships, we solve the biggest problem, delayed funding. uses Stellar to match students with scholarships, verify eligibility on-chain, and instantly release USDC/XLM funds to the student’s wallet once approved via Soroban smart contracts. No waiting, no manual processing.
+
 
 ## Project Structure
 
