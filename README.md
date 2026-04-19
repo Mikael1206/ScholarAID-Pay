@@ -2,7 +2,7 @@
 
 ScholarAID Pay is an AI-powered scholarship platform for students in the Philippines. Instead of just finding scholarships, we solve the biggest problem, delayed funding. It uses Stellar to match students with scholarships, verify eligibility on-chain, and instantly release USDC/XLM funds to the student’s wallet once approved via Soroban smart contracts. No waiting, no manual processing.
 
-GitHub Repo: Mikael1206/ScholarAID-Pay 
+GitHub Repo: Mikael1206/ScholarAID-Pay  
 Contract Factory ID: GCMBSOURXACFPKFDRVHAYP22ZIIPGGSXVDKVNAAZX7ZT5SGDI3CF3NC6
 Stellar Expert Factory Log: https://stellar.expert/explorer/testnet/tx/cf5546a876b71164db5885a49a6374fe640e8812efc8b65945e2b599132d04ed
 
