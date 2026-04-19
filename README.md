@@ -40,6 +40,20 @@ ScholarAid Pay enables Local Government Units (LGUs) and NGOs to:
 - Track disbursement status to prevent fraud
 - Maintain transparent records via blockchain
 
+## UI/Screenshot
+
+**Home Interface**
+<img width="1920" height="913" alt="image" src="https://github.com/user-attachments/assets/eb55b3c1-da80-4c20-902f-d0a18b0759c1" />  
+
+**Smart Matching Engine**  
+<img width="1920" height="910" alt="image" src="https://github.com/user-attachments/assets/dd6066c1-a545-437e-bda4-2ce868cabe3e" />  
+
+**AI Readiness Tracker**  
+<img width="1920" height="912" alt="image" src="https://github.com/user-attachments/assets/606fc8d9-fac2-486c-94f0-1662e60230ab" />  
+
+**Transaction Ledger**  
+<img width="1920" height="914" alt="image" src="https://github.com/user-attachments/assets/5fe1cd62-70ce-456c-84ad-bc956d672444" />  
+
 ## Smart Contract
 
 The core logic is implemented in a Soroban contract written in Rust:
