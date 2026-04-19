@@ -30,7 +30,9 @@ Stellar Expert Factory Log: https://stellar.expert/explorer/testnet/tx/cf5546a87
 └── README.md          # This file
 ```
 
-## Overview
+## Overview  
+
+ScholarAid Pay is a decentralized scholarship disbursement system built on Stellar/Soroban, designed to eliminate weeks-long payout delays for Filipino students. By utilizing blockchain technology, it enables secure, transparent, and instant fund transfers directly to eligible students' wallets, integrating AI eligibility checks and stacking logic to prevent fraud and ensure fair access to educational support.
 
 ScholarAid Pay enables Local Government Units (LGUs) and NGOs to:
 - Register eligible students for scholarships
