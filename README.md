@@ -28,6 +28,7 @@ Stellar Expert Factory Log: https://stellar.expert/explorer/testnet/tx/cf5546a87
 │   ├── main.py        # API endpoints
 │   └── requirements.txt # Python dependencies
 └── README.md          # This file
+```
 
 ## Overview
 
