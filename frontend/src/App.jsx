@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import StellarSdk from 'stellar-sdk'
 import { connectWallet as getFreighterAddress } from './utils/wallet';
+import { isConnected as checkFreighter } from "@stellar/freighter-api";
 
 const scholarshipData = [
   { name: 'CHED Full Merit Scholarship', org: 'Commission on Higher Education', amount: 500, currency: 'XLM', icon: '🏛️', contract: 'CDST...9A2F', match: 96, tags: ['Grade 12 · Senior HS', 'Merit-Based', 'Soroban Escrow'] },
@@ -27,8 +28,9 @@ const tagColors = {
 function App() {
   const [publicKey, setPublicKey] = useState('')
   const [isConnected, setIsConnected] = useState(false)
-  const [theme, setTheme] = useState('dark');   
   const [hasFreighter, setHasFreighter] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [theme, setTheme] = useState('dark');   
   const [activeTab, setActiveTab] = useState('scholarships')
   const [claimedSet, setClaimedSet] = useState(new Set())
   const [history, setHistory] = useState([])
@@ -37,17 +39,22 @@ function App() {
   const [modalContent, setModalContent] = useState(null)
   const [flowPhase, setFlowPhase] = useState(0)
   const [currentScholarship, setCurrentScholarship] = useState(null)
-  const [isProcessing, setIsProcessing] = useState(false)
   const [isDemoMode, setIsDemoMode] = useState(false)
 
-  const connectWallet = async () => {
-    try {
-      console.log("Attempting to connect to Freighter...");
-      alert("Wallet connection logic triggered!");
-    } catch (error) {
-      console.error("Connection failed:", error);
-    }
+  useEffect(() => {
+  const checkDetection = async () =>{
+    const result = await checkFreighter();
+    const installed = result?.isConnected ?? false;
+    setHasFreighter(installed);
+    console.log("Freighter installed:", installed);
   };
+
+  checkDetection();
+
+  window.addEventListener("freighterReady", checkDetection);
+  return () => window.removeEventListener("freighterReady", checkDetection);
+}, []);
+
   const toggleTheme = () => {
     const newTheme = theme  === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -55,11 +62,22 @@ function App() {
   };
 
   const handleConnect = async () => {
-    const address = await getFreighterAddress();
-    if(address){
-      setPublicKey(address);
-      setIsConnected(true);
-      setIsDemoMode(false);
+    const result = await checkFreighter();
+    const isInstalled = result?.isConnected ?? false;
+    if(!isInstalled){
+      window.open("https://www.freighter.app/", "_blank");
+      return;
+    }
+
+    try{
+      const address = await getFreighterAddress();
+      if(address){
+        setPublicKey(address);
+        setIsConnected(true);
+        setIsDemoMode(false);
+      }
+    } catch (err){
+      console.error("Wallet connection failed:", err);
     }
   };
 
@@ -97,29 +115,48 @@ function App() {
   }
 
   const startClaim = async (idx) => {
-    const scholarship = scholarshipData[idx]
-    setIsProcessing(true)
-    setFlowPhase(0)
+    const scholarship = scholarshipData[idx];
+    setIsProcessing(true);
+    setFlowPhase(1);
 
-    // Simulate claim flow with phases
-    for (let phase = 1; phase <= 4; phase++) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setFlowPhase(phase)
+    try{
+      setFlowPhase(2);
+      const response = await fetch('http://localhost:8000/api/verify-eligibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet_address: publicKey })
+      });
+
+      const data = await response.json();
+
+      if(data.score < 85){
+        alert(`Ineligible: Your score is only ${data.score}%. Need 85% to trigger Soroban.`);
+        setIsProcessing(false);
+        return;
+      }
+
+      setFlowPhase(3);
+      await new Promise(r => setTimeout(r, 2000));
+      setFlowPhase(4);
+      await new Promise(r => setTimeout(r, 500));
+
+      const newClaimedSet = new Set(claimedSet);
+
+      newClaimedSet.add(idx);
+      setClaimedSet(newClaimedSet);
+      setTotalXLM(prev => prev + scholarship.amount);
+
+      const txHash = 'TX' + Math.random().toString(36).slice(2, 18).toUpperCase();
+      setHistory([{ ...scholarship, txHash, date: new Date(). toLocaleDateString() }, ...history]);
+
+      setModalContent({ type: 'success', scholarship, txHash});
+    } catch (err){
+      console.error("Claim process failed:", err);
+      alert("System error. Make sure your FastAPI backend is running!");
+    } finally{
+      setIsProcessing(false);
     }
-
-    // Mark as claimed
-    const newClaimedSet = new Set(claimedSet)
-    newClaimedSet.add(idx)
-    setClaimedSet(newClaimedSet)
-    setTotalXLM(prev => prev + scholarship.amount)
-
-    const txHash = 'TX' + Math.random().toString(36).slice(2, 18).toUpperCase()
-    const newHistory = [{ ...scholarship, txHash, date: new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) }, ...history]
-    setHistory(newHistory)
-
-    setIsProcessing(false)
-    setModalContent({ type: 'success', scholarship, txHash })
-  }
+  };
 
   const showWallet = () => {
     setModalContent({ type: 'wallet', address: publicKey })
@@ -321,7 +358,7 @@ function App() {
               Connect your Freighter wallet to verify scholarship eligibility and claim funds on the Stellar network.
             </p>
             <div style={{display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '300px', margin: '0 auto'}}>
-              <button className="btn-primary" onClick={connectWallet}>
+              <button className="btn-primary" onClick={handleConnect}>
                 {hasFreighter ? 'Connect Freighter Wallet' : 'Install Freighter'}
               </button>
               <button className="btn-secondary" onClick={enterDemoMode} style={{background: 'var(--stellar-light)', color: 'var(--stellar)', border: 'none'}}>
@@ -420,7 +457,7 @@ function App() {
                 </div>
                 {isProcessing ? (
                   <button className="btn-primary" disabled>
-                    <span className="spinner"></span>Processing on Stellar...
+                    <span className="spinner"></span> Phase {flowPhase}: Processing...
                   </button>
                 ) : (
                   <button className="btn-primary" onClick={() => startClaim(currentScholarship)}>Apply & Verify via Soroban →</button>

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Dict, Any
 import random
 import ed25519
+import os
 import hashlib
 
 app = FastAPI(title="ScholarAID Pay Backend", version="1.0.0")
@@ -32,7 +33,11 @@ PRE_APPROVED_STUDENTS = {
 }
 
 # Add after imports
-SERVER_PRIVATE_KEY = ed25519.SigningKey.from_secret_bytes(bytes.fromhex("your_private_key_hex_here"))  # Replace with actual key
+_raw_key = os.environ.get("SERVER_PRIVATE_KEY_HEX")
+if _raw_key:
+    SERVER_PRIVATE_KEY = ed25519.SigningKey.from_secret_bytes(bytes.fromhex(_raw_key))
+else:
+    SERVER_PRIVATE_KEY = ed25519.SigningKey.generate()
 
 class EligibilityRequest(BaseModel):
     wallet_address: str
@@ -81,6 +86,10 @@ async def verify_eligibility(request: EligibilityRequest):
             message="Wallet address not found in pre-approved list",
             score=0
         )
+
+@app.post("/verify")
+async def verify_alias(request: EligibilityRequest):
+    return await verify_eligibility(request)
 
 @app.get("/api/scholarships")
 async def get_scholarships():
