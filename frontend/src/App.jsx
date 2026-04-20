@@ -40,6 +40,14 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDemoMode, setIsDemoMode] = useState(false)
 
+  const connectWallet = async () => {
+    try {
+      console.log("Attempting to connect to Freighter...");
+      alert("Wallet connection logic triggered!");
+    } catch (error) {
+      console.error("Connection failed:", error);
+    }
+  };
   const toggleTheme = () => {
     const newTheme = theme  === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
