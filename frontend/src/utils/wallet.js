@@ -1,6 +1,7 @@
 import {
   isConnected,
-  requestAccess,
+  isAllowed,
+  setAllowed,
   getPublicKey,
 } from "@stellar/freighter-api";
 
@@ -16,16 +17,22 @@ export const connectWallet = async () => {
       return null;
     }
 
-    // Step 2 — request user permission (this triggers the Freighter popup)
-    const accessResult = await requestAccess();
+    // Step 2 — check if this site is already allowed
+    const allowedResult = await isAllowed();
+    const alreadyAllowed = allowedResult?.isAllowed ?? false;
 
-    // requestAccess returns either an error string or the public key directly
-    if (accessResult?.error) {
-      console.error("Access denied:", accessResult.error);
-      return null;
+    // Step 3 — if not allowed yet, call setAllowed() — this triggers the popup
+    if (!alreadyAllowed) {
+      const setResult = await setAllowed();
+      const nowAllowed = setResult?.isAllowed ?? false;
+
+      if (!nowAllowed) {
+        console.error("User denied access in Freighter.");
+        return null;
+      }
     }
 
-    // Step 3 — get the public key
+    // Step 4 — get the public key (user is now authorized)
     const keyResult = await getPublicKey();
     const publicKey = keyResult?.publicKey ?? null;
 
@@ -35,6 +42,7 @@ export const connectWallet = async () => {
     }
 
     return publicKey;
+
   } catch (e) {
     console.error("Wallet connection error:", e);
     return null;
