@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import StellarSdk from 'stellar-sdk'
+import { connectWallet as getFreighterAddress } from './utils/wallet';
 
 const scholarshipData = [
   { name: 'CHED Full Merit Scholarship', org: 'Commission on Higher Education', amount: 500, currency: 'XLM', icon: '🏛️', contract: 'CDST...9A2F', match: 96, tags: ['Grade 12 · Senior HS', 'Merit-Based', 'Soroban Escrow'] },
@@ -26,6 +27,7 @@ const tagColors = {
 function App() {
   const [publicKey, setPublicKey] = useState('')
   const [isConnected, setIsConnected] = useState(false)
+  const [theme, setTheme] = useState('dark');   
   const [hasFreighter, setHasFreighter] = useState(false)
   const [activeTab, setActiveTab] = useState('scholarships')
   const [claimedSet, setClaimedSet] = useState(new Set())
@@ -38,52 +40,20 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDemoMode, setIsDemoMode] = useState(false)
 
-  useEffect(() => {
-    const checkFreighter = () => {
-      if (typeof window !== 'undefined') {
-        const hasFreighter = window.freighterApi || window.freighter || false
-        setHasFreighter(!!hasFreighter)
-      }
+  const toggleTheme = () => {
+    const newTheme = theme  === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
+  const handleConnect = async () => {
+    const address = await getFreighterAddress();
+    if(address){
+      setPublicKey(address);
+      setIsConnected(true);
+      setIsDemoMode(false);
     }
-    checkFreighter()
-    const timeout = setTimeout(checkFreighter, 2000)
-    return () => clearTimeout(timeout)
-  }, [])
-
-  const connectWallet = async () => {
-    if (typeof window !== 'undefined' && (window.freighterApi || window.freighter)) {
-      try {
-        let connection
-        if (window.freighterApi && window.freighterApi.connect) {
-          connection = await window.freighterApi.connect()
-        } else if (window.freighterApi && window.freighterApi.connectWallet) {
-          connection = await window.freighterApi.connectWallet()
-        } else if (window.freighter && window.freighter.connect) {
-          connection = await window.freighter.connect()
-        }
-
-        let address
-        if (connection?.publicKey) {
-          address = connection.publicKey
-        } else if (connection?.address) {
-          address = connection.address
-        } else if (window.freighterApi && window.freighterApi.getPublicKey) {
-          address = await window.freighterApi.getPublicKey()
-        } else if (window.freighter && window.freighter.getPublicKey) {
-          address = await window.freighter.getPublicKey()
-        }
-
-        if (!address) throw new Error('Unable to retrieve public key')
-        setPublicKey(address)
-        setIsConnected(true)
-      } catch (error) {
-        console.error('Wallet connection failed:', error)
-        alert('Please install the Freighter wallet extension.')
-      }
-    } else {
-      alert('Freighter wallet not detected.')
-    }
-  }
+  };
 
   const disconnectWallet = () => {
     setPublicKey('')
@@ -180,22 +150,27 @@ function App() {
           <div className="logo-icon">S</div>
           ScholarAID <span className="badge">STELLAR</span>
         </div>
+
         <div className="topbar-right">
+          <button onClick={toggleTheme} className="theme-toggle">
+            {theme === 'light' ? '🌙 Night' : '☀️ Light'}
+          </button>
+
           {isConnected ? (
-            <>
-              {isDemoMode && <span style={{fontSize: '10px', background: 'var(--stellar)', color: 'white', padding: '4px 8px', borderRadius: '99px', fontWeight: 600, marginRight: '8px'}}>DEMO MODE</span>}
-              <button className="wallet-pill" onClick={showWallet}>
-                <div className="wallet-dot"></div>
-                {formatWalletAddress(publicKey)}
-              </button>
-              <div className="avatar">{getInitials(publicKey)}</div>
-              <button className="btn-secondary" style={{width: 'auto', margin: 0, padding: '6px 12px', fontSize: '12px'}} onClick={disconnectWallet}>
-                Exit {isDemoMode ? 'Demo' : 'Wallet'}
-              </button>
-            </>
+          <>
+            {isDemoMode && <span className="demo-badge">DEMO MODE</span>}
+            <button className="wallet-pill" onClick={showWallet}>
+              <div className="wallet-dot"></div>
+              {formatWalletAddress(publicKey)}
+            </button>
+            <div className="avatar">{getInitials(publicKey)}</div>
+            <button className="btn-secondary-mini" onClick={disconnectWallet}>
+              Exit
+            </button>
+          </>
           ) : (
-            <button className="btn-primary" style={{width: 'auto', margin: 0}} onClick={connectWallet}>
-              {hasFreighter ? 'Connect Wallet' : 'Install Freighter'}
+            <button className="btn-primary" style={{width: 'auto', margin: 0}} onClick={handleConnect}>
+              Connect Wallet
             </button>
           )}
         </div>

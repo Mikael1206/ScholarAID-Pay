@@ -16,8 +16,8 @@
   --success-light: #D1FAE5;
   --danger: #DC2626;
   --muted: #6B7280;
-  --border: #E5E7EB;
-  --surface: #F9FAFB;
+  --border: #e2e8f0;
+  --surface: #ffffff;
   --white: #fff;
   --text: #111827;
   --text2: #374151;
@@ -25,6 +25,16 @@
   --stellar-light: #F3EEFF;
   --font: 'Space Grotesk', sans-serif;
   --mono: 'DM Mono', monospace;
+  --bg-page: #f8fafc;
+  --text-main: #1e293b;
+}
+
+[data-theme='dark']{
+  --bg-page: #0f172a;
+  --text-main: #f8fafc;
+  --surface: #1e293b;
+  --border: #334155;
+  --white: #1e293b;
 }
 
 html,
@@ -36,15 +46,17 @@ body,
 body {
   font-family: var(--font);
   background: var(--surface);
-  color: var(--text);
+  color: var(--text-main);
   min-height: 100vh;
   margin: 0;
   padding: 0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  transition: 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  
 }
 
 button,
@@ -830,6 +842,7 @@ a:hover {
 }
 
 .readiness-score-inner {
+  background: var(--white);
   width: 36px;
   height: 36px;
   background: white;
@@ -895,6 +908,27 @@ a:hover {
   animation: spin 0.6s linear infinite;
   vertical-align: middle;
   margin-right: 8px;
+}
+
+.theme-toggle{
+  background: var(--brand-light);
+  color: var(--brand);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+[data-theme='dark'] .theme-toggle {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.theme-toggle:hover {
+  filter: brightness(0.9);
 }
 
 @keyframes spin {
