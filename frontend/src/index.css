@@ -45,14 +45,14 @@ body,
 
 body {
   font-family: var(--font);
-  background: var(--surface);
+  background: var(--bg-page);
   color: var(--text-main);
   min-height: 100vh;
   margin: 0;
   padding: 0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  transition: 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
