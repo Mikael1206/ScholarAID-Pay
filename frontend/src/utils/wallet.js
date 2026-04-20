@@ -1,8 +1,6 @@
 import {
   isConnected,
-  isAllowed,
-  setAllowed,
-  getPublicKey,
+  requestAccess,
 } from "@stellar/freighter-api";
 
 export const connectWallet = async () => {
@@ -17,31 +15,23 @@ export const connectWallet = async () => {
       return null;
     }
 
-    // Step 2 — check if this site is already allowed
-    const allowedResult = await isAllowed();
-    const alreadyAllowed = allowedResult?.isAllowed ?? false;
+    // Step 2 — requestAccess triggers the Freighter popup AND returns the address
+    // Correct Freighter v6 API — handles allow-listing + key retrieval in one call
+    const accessObj = await requestAccess();
 
-    // Step 3 — if not allowed yet, call setAllowed() — this triggers the popup
-    if (!alreadyAllowed) {
-      const setResult = await setAllowed();
-      const nowAllowed = setResult?.isAllowed ?? false;
-
-      if (!nowAllowed) {
-        console.error("User denied access in Freighter.");
-        return null;
-      }
-    }
-
-    // Step 4 — get the public key (user is now authorized)
-    const keyResult = await getPublicKey();
-    const publicKey = keyResult?.publicKey ?? null;
-
-    if (!publicKey) {
-      console.error("No public key returned from Freighter.");
+    if (accessObj.error) {
+      console.error("Freighter access denied:", accessObj.error);
       return null;
     }
 
-    return publicKey;
+    const address = accessObj.address ?? null;
+
+    if (!address) {
+      console.error("No address returned from Freighter.");
+      return null;
+    }
+
+    return address;
 
   } catch (e) {
     console.error("Wallet connection error:", e);

@@ -122,7 +122,7 @@ function App() {
         if (!installed) {
           setConnectError('Freighter not detected. Please install it and try again.');
         } else {
-          setConnectError('Connection cancelled. Please approve the request in Freighter.');
+          setConnectError('Approved in Freighter but key not received. Please click Connect again.');
         }
       }
     } catch (err) {
